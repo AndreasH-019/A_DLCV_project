@@ -3,15 +3,6 @@ import cv2
 from torchvision.datasets import CocoDetection
 from copy_paste import copy_paste_class
 
-import cv2
-import numpy as np
-from copy_paste import CopyPaste
-from coco import CocoDetectionCP
-from visualize import display_instances
-import albumentations as A
-import random
-from matplotlib import pyplot as plt
-
 min_keypoints_per_image = 10
 
 def _count_visible_keypoints(anno):
