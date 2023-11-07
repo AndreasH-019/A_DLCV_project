@@ -48,6 +48,7 @@ class CocoDetectionCP(CocoDetection):
             anno = self.coco.loadAnns(ann_ids)
             if has_valid_annotation(anno):
                 ids.append(img_id)
+
         self.ids = ids
 
     def load_example(self, index):

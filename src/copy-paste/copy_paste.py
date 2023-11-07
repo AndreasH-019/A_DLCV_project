@@ -298,6 +298,7 @@ def copy_paste_class(dataset_class):
             self._split_transforms()
 
         img_data = self.load_example(idx)
+        before_img = img_data['image']
         if self.copy_paste is not None:
             paste_idx = random.randint(0, self.__len__() - 1)
             paste_img_data = self.load_example(paste_idx)
@@ -307,7 +308,10 @@ def copy_paste_class(dataset_class):
 
             img_data = self.copy_paste(**img_data, **paste_img_data)
             img_data = self.post_transforms(**img_data)
+            img_data['index'] = idx # ADDED
             img_data['paste_index'] = paste_idx
+            img_data['paste_image'] = paste_img_data['paste_image']
+            img_data['before_image'] = before_img
 
         return img_data
 
