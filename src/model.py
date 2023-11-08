@@ -13,6 +13,10 @@ class LitMaskRCNN(L.LightningModule):
         self.save_hyperparameters(logger=False)
         self.meanAveragePrecision = torchmetrics.detection.mean_ap.MeanAveragePrecision(iou_type='segm',
                                                                                    iou_thresholds=[0.5])
+        self.debug = False
+
+    def set_debug(self, new_debug):
+        self.debug = new_debug
 
     def training_step(self, batch, batch_idx):
         images, targets = batch
@@ -23,9 +27,13 @@ class LitMaskRCNN(L.LightningModule):
 
     def train_dataloader(self):
         dataset = self.get_dataset('train')
-        dataset.ids = random.sample(dataset.ids, 2)
-        dataloader = DataLoader(dataset=dataset, batch_size=2,
-                   shuffle=True, num_workers=0, collate_fn=custom_collate_fn)
+        if self.debug:
+            dataset.ids = random.sample(dataset.ids, 2)
+            dataloader = DataLoader(dataset=dataset, batch_size=2,
+                       shuffle=True, num_workers=0, collate_fn=custom_collate_fn)
+        else:
+            dataloader = DataLoader(dataset=dataset, batch_size=8,
+                                    shuffle=True, num_workers=23, collate_fn=custom_collate_fn)
         return dataloader
 
     def test_step(self, batch, batch_idx):
@@ -41,16 +49,24 @@ class LitMaskRCNN(L.LightningModule):
 
     def test_dataloader(self):
         dataset = self.get_dataset('test')
-        dataset.ids = random.sample(dataset.ids, 10)
-        dataloader = DataLoader(dataset=dataset, batch_size=2,
-                                shuffle=False, num_workers=0, collate_fn=custom_collate_fn)
+        if self.debug:
+            dataset.ids = random.sample(dataset.ids, 10)
+            dataloader = DataLoader(dataset=dataset, batch_size=2,
+                                    shuffle=False, num_workers=0, collate_fn=custom_collate_fn)
+        else:
+            dataloader = DataLoader(dataset=dataset, batch_size=8,
+                                    shuffle=False, num_workers=23, collate_fn=custom_collate_fn)
         return dataloader
 
     def val_dataloader(self):
         dataset = self.get_dataset('val')
-        dataset.ids = random.sample(dataset.ids, 2)
-        dataloader = DataLoader(dataset=dataset, batch_size=2,
-                                shuffle=False, num_workers=0, collate_fn=custom_collate_fn)
+        if self.debug:
+            dataset.ids = random.sample(dataset.ids, 2)
+            dataloader = DataLoader(dataset=dataset, batch_size=2,
+                                    shuffle=False, num_workers=0, collate_fn=custom_collate_fn)
+        else:
+            dataloader = DataLoader(dataset=dataset, batch_size=8,
+                                    shuffle=False, num_workers=23, collate_fn=custom_collate_fn)
         return dataloader
 
     def validation_step(self, batch, batch_idx):
