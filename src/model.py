@@ -24,17 +24,8 @@ class LitMaskRCNN(L.LightningModule):
         loss = sum(loss for loss in loss_dict.values())
         self.log("loss", loss.item())
         return loss
-
     def train_dataloader(self):
-        dataset = self.get_dataset('train')
-        if self.debug:
-            dataset.ids = random.sample(dataset.ids, 2)
-            dataloader = DataLoader(dataset=dataset, batch_size=2,
-                       shuffle=True, num_workers=0, collate_fn=custom_collate_fn)
-        else:
-            dataloader = DataLoader(dataset=dataset, batch_size=8,
-                                    shuffle=True, num_workers=23, collate_fn=custom_collate_fn)
-        return dataloader
+        return self.get_dataloader('train')
 
     def test_step(self, batch, batch_idx):
 
@@ -44,29 +35,24 @@ class LitMaskRCNN(L.LightningModule):
             output["masks"] = output['masks'].to(torch.bool)
             output["masks"] = output["masks"].squeeze(1)
         metric_dict = self.meanAveragePrecision(outputs, targets)
-        self.log("mAP", metric_dict['map'], batch_size=len(images))
+        self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
         # plot_segmentation(images[0], outputs[0]['masks'])
-
     def test_dataloader(self):
-        dataset = self.get_dataset('test')
-        if self.debug:
-            dataset.ids = random.sample(dataset.ids, 10)
-            dataloader = DataLoader(dataset=dataset, batch_size=2,
-                                    shuffle=False, num_workers=0, collate_fn=custom_collate_fn)
-        else:
-            dataloader = DataLoader(dataset=dataset, batch_size=8,
-                                    shuffle=False, num_workers=23, collate_fn=custom_collate_fn)
-        return dataloader
+        return self.get_dataloader('test')
 
     def val_dataloader(self):
-        dataset = self.get_dataset('val')
+        return self.get_dataloader('val')
+
+    def get_dataloader(self, task):
+        dataset = self.get_dataset(task)
+        shuffle_options = {'train': True, 'val': False, 'test': False}
         if self.debug:
             dataset.ids = random.sample(dataset.ids, 2)
             dataloader = DataLoader(dataset=dataset, batch_size=2,
-                                    shuffle=False, num_workers=0, collate_fn=custom_collate_fn)
+                                    shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
-            dataloader = DataLoader(dataset=dataset, batch_size=8,
-                                    shuffle=False, num_workers=23, collate_fn=custom_collate_fn)
+            dataloader = DataLoader(dataset=dataset, batch_size=4,
+                                    shuffle=shuffle_options[task], num_workers=23, collate_fn=custom_collate_fn)
         return dataloader
 
     def validation_step(self, batch, batch_idx):
@@ -76,7 +62,7 @@ class LitMaskRCNN(L.LightningModule):
             output["masks"] = output['masks'].to(torch.bool)
             output["masks"] = output["masks"].squeeze(1)
         metric_dict = self.meanAveragePrecision(outputs, targets)
-        self.log("mAP", metric_dict['map'], batch_size=len(images))
+        self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
         # plot_segmentation(images[0], outputs[0]['masks'])
 
     def get_dataset(self, task):

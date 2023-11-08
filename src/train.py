@@ -10,7 +10,7 @@ def parserargs():
 
 def getTrainer(debug):
     if debug:
-        return L.Trainer(max_epochs=4, check_val_every_n_epoch=1, log_every_n_steps=1)
+        return L.Trainer(max_epochs=2, check_val_every_n_epoch=1, log_every_n_steps=1)
     else:
         return L.Trainer(max_epochs=100)
 
