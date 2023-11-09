@@ -43,18 +43,6 @@ class LitMaskRCNN(L.LightningModule):
     def val_dataloader(self):
         return self.get_dataloader('val')
 
-    def get_dataloader(self, task):
-        dataset = self.get_dataset(task)
-        shuffle_options = {'train': True, 'val': False, 'test': False}
-        if self.debug:
-            dataset.ids = random.sample(dataset.ids, 2)
-            dataloader = DataLoader(dataset=dataset, batch_size=2,
-                                    shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
-        else:
-            dataloader = DataLoader(dataset=dataset, batch_size=4,
-                                    shuffle=shuffle_options[task], num_workers=23, collate_fn=custom_collate_fn)
-        return dataloader
-
     def validation_step(self, batch, batch_idx):
         images, targets = batch
         outputs = self.maskRCNN(images)
@@ -71,6 +59,18 @@ class LitMaskRCNN(L.LightningModule):
                               annFile=f"../../data/coco_minitrain_25k/annotations/instances_{task}2017_pruned.json",
                               transform=image_transform)
         return dataset
+
+    def get_dataloader(self, task):
+        dataset = self.get_dataset(task)
+        shuffle_options = {'train': True, 'val': False, 'test': False}
+        if self.debug:
+            dataset.ids = random.sample(dataset.ids, 2)
+            dataloader = DataLoader(dataset=dataset, batch_size=2,
+                                    shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
+        else:
+            dataloader = DataLoader(dataset=dataset, batch_size=4,
+                                    shuffle=shuffle_options[task], num_workers=23, collate_fn=custom_collate_fn)
+        return dataloader
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
