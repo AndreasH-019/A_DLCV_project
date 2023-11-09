@@ -69,7 +69,7 @@ class LitMaskRCNN(L.LightningModule):
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
             dataloader = DataLoader(dataset=dataset, batch_size=4,
-                                    shuffle=shuffle_options[task], num_workers=23, collate_fn=custom_collate_fn)
+                                    shuffle=shuffle_options[task], num_workers=4, collate_fn=custom_collate_fn)
         return dataloader
 
     def configure_optimizers(self):
