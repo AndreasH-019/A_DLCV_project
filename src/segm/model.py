@@ -73,7 +73,7 @@ class LitMaskRCNN(L.LightningModule):
         return dataloader
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
         return optimizer
 
 def get_model():
