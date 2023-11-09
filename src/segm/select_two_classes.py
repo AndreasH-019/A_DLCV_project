@@ -73,17 +73,17 @@ def rename():
     if os.path.exists(annot_path):
         os.remove(annot_path)
 
-    os.rename("../../data/coco_minitrain_25k/annotations/instances_val2017_pruned.json",
+    os.rename("../../../data/coco_minitrain_25k/annotations/instances_val2017_pruned.json",
               annot_path)
 
     image_folder_path = "../../data/coco_minitrain_25k/images_pruned/test2017"
     if os.path.exists(image_folder_path):
         shutil.rmtree(image_folder_path)
-    os.rename("../../data/coco_minitrain_25k/images_pruned/val2017",
+    os.rename("../../../data/coco_minitrain_25k/images_pruned/val2017",
               image_folder_path)
 
-    if not os.path.exists("../../data/coco_minitrain_25k/images_pruned/val2017"):
-        os.makedirs("../../data/coco_minitrain_25k/images_pruned/val2017")
+    if not os.path.exists("../../../data/coco_minitrain_25k/images_pruned/val2017"):
+        os.makedirs("../../../data/coco_minitrain_25k/images_pruned/val2017")
 
 tasks = ['train', 'val']
 for task in tasks:
@@ -93,7 +93,7 @@ for task in tasks:
                                       f"../../data/coco_minitrain_25k/images_pruned/{task}2017")
 
 rename()
-coco_train = COCO("../../data/coco_minitrain_25k/annotations/instances_train2017_pruned.json")
+coco_train = COCO("../../../data/coco_minitrain_25k/annotations/instances_train2017_pruned.json")
 train_val_split(coco_train,
                 "../../data/coco_minitrain_25k/images_pruned/train2017",
                 "../../data/coco_minitrain_25k/annotations/instances_train2017_pruned.json",
