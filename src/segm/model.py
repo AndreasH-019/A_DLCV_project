@@ -9,7 +9,7 @@ import torchmetrics
 class LitMaskRCNN(L.LightningModule):
     def __init__(self):
         super().__init__()
-        self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
+        self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=False)
         self.save_hyperparameters(logger=False)
         self.meanAveragePrecision = torchmetrics.detection.mean_ap.MeanAveragePrecision(iou_type='segm',
                                                                                    iou_thresholds=[0.5])
