@@ -9,7 +9,9 @@ import torchmetrics
 class LitMaskRCNN(L.LightningModule):
     def __init__(self):
         super().__init__()
-        self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=False)
+        # weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_Weights.COCO_V1
+        # self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(weights=weights)
+        self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(weights=None)
         self.save_hyperparameters(logger=False)
         self.meanAveragePrecision = torchmetrics.detection.mean_ap.MeanAveragePrecision(iou_type='segm')
         self.debug = False
@@ -24,33 +26,30 @@ class LitMaskRCNN(L.LightningModule):
         self.log("loss", loss.item())
         self.log("loss_mask", loss_dict['loss_mask'].item())
         return loss
-    def train_dataloader(self):
-        return self.get_dataloader('train')
+
+    def validation_step(self, batch, batch_idx):
+        self.log_metric(batch)
 
     def test_step(self, batch, batch_idx):
-
-        images, targets = batch
-        outputs = self.maskRCNN(images)
-        for output in outputs:
-            output["masks"] = output['masks'].to(torch.bool)
-            output["masks"] = output["masks"].squeeze(1)
-        metric_dict = self.meanAveragePrecision(outputs, targets)
-        self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
-        # plot_segmentation(images[0], outputs[0]['masks'], outputs[0]['scores'])
-    def test_dataloader(self):
-        return self.get_dataloader('test')
+        self.log_metric(batch)
+    def train_dataloader(self):
+        return self.get_dataloader('train')
 
     def val_dataloader(self):
         return self.get_dataloader('val')
 
-    def validation_step(self, batch, batch_idx):
+    def test_dataloader(self):
+        return self.get_dataloader('test')
+
+    def log_metric(self, batch):
         images, targets = batch
         outputs = self.maskRCNN(images)
         for output in outputs:
-            output["masks"] = output['masks'].to(torch.bool)
+            output["masks"] = output["masks"] > 0.5
             output["masks"] = output["masks"].squeeze(1)
         metric_dict = self.meanAveragePrecision(outputs, targets)
         self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
+        # plot_segmentation(images[0], outputs[0]['masks'], outputs[0]['scores'])
 
     def get_dataset(self, task):
         image_transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
