@@ -59,9 +59,10 @@ def custom_collate_fn(batch):
         targets.append(target)
     return imgs, targets
 
-def plot_segmentation(image, segmentations):
+def plot_segmentation(image, segmentations, scores):
+    keep = scores > 0.5
     image = (image/image.max()*255).to(torch.uint8)
-    segmentations = segmentations.to(torch.bool)
+    segmentations = segmentations[keep].to(torch.bool)
     plot_img = torchvision.utils.draw_segmentation_masks(image, segmentations, alpha=0.5, colors=['red', 'blue']*200)
     plt.imshow(F.to_pil_image(plot_img))
     plt.show()

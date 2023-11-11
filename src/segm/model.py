@@ -23,6 +23,7 @@ class LitMaskRCNN(L.LightningModule):
         loss_dict = self.maskRCNN(images, targets)
         loss = sum(loss for loss in loss_dict.values())
         self.log("loss", loss.item())
+        self.log("loss_mask", loss_dict['loss_mask'].item())
         return loss
     def train_dataloader(self):
         return self.get_dataloader('train')
@@ -36,7 +37,7 @@ class LitMaskRCNN(L.LightningModule):
             output["masks"] = output["masks"].squeeze(1)
         metric_dict = self.meanAveragePrecision(outputs, targets)
         self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
-        # plot_segmentation(images[0], outputs[0]['masks'])
+        # plot_segmentation(images[0], outputs[0]['masks'], outputs[0]['scores'])
     def test_dataloader(self):
         return self.get_dataloader('test')
 
@@ -51,7 +52,6 @@ class LitMaskRCNN(L.LightningModule):
             output["masks"] = output["masks"].squeeze(1)
         metric_dict = self.meanAveragePrecision(outputs, targets)
         self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
-        # plot_segmentation(images[0], outputs[0]['masks'])
 
     def get_dataset(self, task):
         image_transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
@@ -64,8 +64,8 @@ class LitMaskRCNN(L.LightningModule):
         dataset = self.get_dataset(task)
         shuffle_options = {'train': True, 'val': False, 'test': False}
         if self.debug:
-            dataset.ids = random.sample(dataset.ids, 2)
-            dataloader = DataLoader(dataset=dataset, batch_size=2,
+            dataset.ids = random.sample(dataset.ids, 5)
+            dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
             dataloader = DataLoader(dataset=dataset, batch_size=4,
@@ -73,7 +73,7 @@ class LitMaskRCNN(L.LightningModule):
         return dataloader
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=1e-5)
         return optimizer
 
 def get_model():
