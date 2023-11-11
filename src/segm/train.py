@@ -9,7 +9,8 @@ def parserargs():
     return args
 
 def getTrainer(debug):
-    checkpoint_callback = L.pytorch.callbacks.ModelCheckpoint(monitor='mAP', mode='max', save_top_k=1, filename='best_model')
+    checkpoint_callback = L.pytorch.callbacks.ModelCheckpoint(monitor='mAP', mode='max',
+                                                              save_top_k=1, filename='best_model', save_last=True)
     if debug:
         return L.Trainer(max_epochs=2, check_val_every_n_epoch=1, log_every_n_steps=1, callbacks=[checkpoint_callback])
     else:

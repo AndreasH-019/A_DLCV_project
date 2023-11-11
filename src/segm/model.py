@@ -11,8 +11,7 @@ class LitMaskRCNN(L.LightningModule):
         super().__init__()
         self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=False)
         self.save_hyperparameters(logger=False)
-        self.meanAveragePrecision = torchmetrics.detection.mean_ap.MeanAveragePrecision(iou_type='segm',
-                                                                                   iou_thresholds=[0.5])
+        self.meanAveragePrecision = torchmetrics.detection.mean_ap.MeanAveragePrecision(iou_type='segm')
         self.debug = False
 
     def set_debug(self, new_debug):
@@ -64,7 +63,7 @@ class LitMaskRCNN(L.LightningModule):
         dataset = self.get_dataset(task)
         shuffle_options = {'train': True, 'val': False, 'test': False}
         if self.debug:
-            dataset.ids = random.sample(dataset.ids, 5)
+            dataset.ids = random.sample(dataset.ids, 1)
             dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
