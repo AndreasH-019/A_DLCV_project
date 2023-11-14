@@ -2,3 +2,4 @@ data/*
 *.iml
 *.xml
 *.pyc
+src/lightning_logs/*

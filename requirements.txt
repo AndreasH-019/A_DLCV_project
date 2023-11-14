@@ -1,0 +1,6 @@
+numpy < 1.24
+lightning
+torchvision
+matplotlib
+torchmetrics[detection]
+lightning[extra]

@@ -1,11 +1,6 @@
 import matplotlib.pyplot as plt
-import numpy as np
-
-from torch.utils.data.dataloader import DataLoader, Dataset
-import torchvision.transforms as transforms
-from torchvision.datasets import CocoDetection
+from torch.utils.data.dataloader import DataLoader
 import torchvision.transforms.functional as F
-from torchvision.utils import draw_segmentation_masks
 import torchvision
 import torch
 from tqdm import tqdm
@@ -26,7 +21,7 @@ COCO_CLASSES = ["background",
                 "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush", "hair brush"
                 ]
 
-class CocoDataset(CocoDetection):
+class CocoDataset(torchvision.datasets.CocoDetection):
 
     def __init__(self, root, annFile, transform=None,
                  target_transform=None, transforms=None, size=[256, 256]):
@@ -40,18 +35,18 @@ class CocoDataset(CocoDetection):
         N = len(loaded_target)
         formatted_target = {"boxes": torch.zeros((N, 4), dtype=torch.float32),
                             "labels": torch.zeros((N), dtype=torch.int64),
-                            "masks": torch.zeros((N, self.size[0], self.size[1]), dtype=torch.uint8)}
+                            "masks": torch.zeros((N, image.size[1], image.size[0]), dtype=torch.uint8)}
         if self.transforms is not None:
             image, loaded_target = self.transforms(image, loaded_target)
 
         for i, detection in enumerate(loaded_target):
             mask = torch.tensor(self.coco.annToMask(detection))
-            formatted_target['masks'][i, :, :] = F.resize(mask.unsqueeze(0), self.size, antialias=True).squeeze(0)
+            formatted_target['masks'][i, :, :] = mask
             formatted_target['boxes'][i, :] = torch.tensor(detection['bbox'])
             formatted_target['labels'][i] = torch.tensor(detection['category_id'])
 
         formatted_target["boxes"] = torch.cat((formatted_target["boxes"][:, :2], formatted_target["boxes"][:, :2] + formatted_target["boxes"][:, 2:]), dim=1)
-        formatted_target["boxes"] = formatted_target["boxes"]/torch.tensor([self.size[0], self.size[1], self.size[0], self.size[1]])
+        formatted_target['masks'] = formatted_target["masks"].to(torch.bool)
         return image, formatted_target
 
 
@@ -62,46 +57,38 @@ def custom_collate_fn(batch):
         img, target = sample
         imgs.append(img)
         targets.append(target)
-    imgs = torch.stack(imgs)
     return imgs, targets
 
-def plot_segmentation(image, segmentations, labels):
-    image = (image/image.max()*255).to(torch.uint8)
+def plot_segmentation(image, segmentations, scores=None):
+    if scores != None:
+        keep = scores > 0.7
+        segmentations = segmentations[keep]
     segmentations = segmentations.to(torch.bool)
-    plot_img = draw_segmentation_masks(image, segmentations, alpha=0.5)
+    image = (image / image.max() * 255).to(torch.uint8)
+
+    # Generer 200 forskellige farver
+    colors = torch.randint(0, 256, size=(200, 3), dtype=torch.uint8)
+
+    plot_img = torchvision.utils.draw_segmentation_masks(image, segmentations, alpha=0.5,
+                                                         colors=colors.tolist())
+
     plt.imshow(F.to_pil_image(plot_img))
     plt.show()
 
 
 if __name__ == "__main__":
-
-    image_transform = transforms.Compose([transforms.Resize([256, 256]),
-                                    transforms.ToTensor()])
-    target_transform = transforms.Compose([
-        transforms.Resize([256, 256])
-    ])
-    # dataset_train = CocoDataset(
-    #     root="../../data/coco_minitrain_25k/images/val2017",
-    #     annFile="../../data/coco_minitrain_25k/annotations/instances_val2017_pruned.json",
-    #     transform=image_transform,
-    # )
-    dataset_train = CocoDetection(
-        root="../../data/coco_minitrain_25k/images/train2017",
-        annFile="../../data/coco_minitrain_25k/annotations/instances_train2017_pruned.json",
+    image_transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+    dataset_train = CocoDataset(
+        root="../../data/coco_minitrain_25k/images_pruned/val2017",
+        annFile="../../data/coco_minitrain_25k/annotations/instances_val2017_pruned.json",
         transform=image_transform,
     )
-
-
     data_loader = DataLoader(dataset=dataset_train, batch_size=2,
                              shuffle=True, num_workers=0, collate_fn=custom_collate_fn)
-    # model = torchvision.models.detection.maskrcnn_resnet50_fpn(weights=None)
     for images, targets in tqdm(data_loader):
-        # image = images[0]  # Assuming batch size is 1
-        # target = targets[0]
-        #
-        # labels = target['labels']
-        # masks = target['masks']
-        # plot_segmentation(image, masks, labels)
-        # out = model(images, targets)
-        # print(out)
-        pass
+        image = images[0]  # Assuming batch size is 1
+        target = targets[0]
+        labels = target['labels']
+        masks = target['masks']
+        plot_segmentation(image, masks)
+

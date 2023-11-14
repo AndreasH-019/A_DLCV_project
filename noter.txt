@@ -1,0 +1,12 @@
+huggingface diffusino
+grounding dino (segment anything)
+grounded segment anything
+
+fine tune model to generate on white background
+
+self.maskRCNN(images)
+
+https://arxiv.org/pdf/2206.09592.pdf
+https://arxiv.org/pdf/2212.03863.pdf
+https://arxiv.org/pdf/2309.13042.pdf
+https://arxiv.org/pdf/2301.05221.pdf
