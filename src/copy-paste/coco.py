@@ -51,28 +51,65 @@ class CocoDetectionCP(CocoDetection):
 
         self.ids = ids
 
-    def load_example(self, index):
-        img_id = self.ids[index]
-        ann_ids = self.coco.getAnnIds(imgIds=img_id)
-        target = self.coco.loadAnns(ann_ids)
+    def load_example(self, index, pasteImg = False):
+        # if we want to paste from diffusion model
+        if pasteImg == True:
 
-        path = self.coco.loadImgs(img_id)[0]['file_name']
-        image = cv2.imread(os.path.join(self.root, path))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # load random image from folder
+            path = "000000000753.jpg"
 
-        #convert all of the target segmentations to masks
-        #bboxes are expected to be (y1, x1, y2, x2, category_id)
-        masks = []
-        bboxes = []
-        for ix, obj in enumerate(target):
-            masks.append(self.coco.annToMask(obj))
-            bboxes.append(obj['bbox'] + [obj['category_id']] + [ix])
+            pasteRoot = '../../data/coco_minitrain_25k/images_pruned/images_diffusion'
+            pasteMaskPath = '../../data/coco_minitrain_25k/annotations/masks'
+            image = cv2.imread(os.path.join(pasteRoot, path))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        #pack outputs into a dict
-        output = {
-            'image': image,
-            'masks': masks,
-            'bboxes': bboxes
-        }
+            # load mask which corresponds to image
+            mask = cv2.imread(os.path.join(pasteMaskPath, path))[:,:,0]
+            mask = (mask>200).astype('uint8')
+            mask = [mask]
+
+            # load bbox which corresponds to image
+            bbox = [[87.73, 174.02, 274.7, 352.36, 25, 0]]
+
+            # import matplotlib.pyplot as plt
+            # fig, ax = plt.subplots(1, 2, figsize=(16,5))
+            # ax[0].imshow(image)
+            # ax[1].imshow(mask[0])
+            # ax[1].scatter([bbox[0][0],bbox[0][0],bbox[0][0]+bbox[0][2],bbox[0][0]+bbox[0][2]],[bbox[0][1],bbox[0][1]+bbox[0][3],bbox[0][1],bbox[0][1]+bbox[0][3]])
+            # plt.show()
+
+            #pack outputs into a dict
+            output = {
+                'image': image,
+                'masks': mask,
+                'bboxes': bbox
+            }
+
+        else:
+            img_id = self.ids[index]
+            ann_ids = self.coco.getAnnIds(imgIds=img_id)
+            target = self.coco.loadAnns(ann_ids)
+
+            path = self.coco.loadImgs(img_id)[0]['file_name']
+
+
+            image = cv2.imread(os.path.join(self.root, path))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+
+            #convert all of the target segmentations to masks
+            #bboxes are expected to be (y1, x1, y2, x2, category_id)
+            masks = []
+            bboxes = []
+            for ix, obj in enumerate(target):
+                masks.append(self.coco.annToMask(obj))
+                bboxes.append(obj['bbox'] + [obj['category_id']] + [ix])
+
+            #pack outputs into a dict
+            output = {
+                'image': image,
+                'masks': masks,
+                'bboxes': bboxes
+            }
         
         return self.transforms(**output)

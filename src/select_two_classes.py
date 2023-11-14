@@ -44,9 +44,11 @@ def remove_missing_images_from_annots(coco, img_root, new_json_file, new_img_roo
     prune_image_folder(coco, img_root, new_img_root)
 
 tasks = ['train', 'val']
+
+print(os.getcwd())
 for task in tasks:
-    coco = COCO(f"../../data/coco_minitrain_25k/annotations/instances_{task}2017.json")
-    remove_missing_images_from_annots(coco, f"../../data/coco_minitrain_25k/images/{task}2017",
-               f"../../data/coco_minitrain_25k/annotations/instances_{task}2017_pruned.json",
-                                      f"../../data/coco_minitrain_25k/images_pruned/{task}2017")
+    coco = COCO(f"../data/coco_minitrain_25k/annotations/instances_{task}2017.json")
+    remove_missing_images_from_annots(coco, f"../data/coco_minitrain_25k/images/{task}2017",
+               f"../data/coco_minitrain_25k/annotations/instances_{task}2017_pruned.json",
+                                      f"../data/coco_minitrain_25k/images_pruned/{task}2017")
 

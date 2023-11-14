@@ -301,12 +301,47 @@ def copy_paste_class(dataset_class):
         before_img = img_data['image']
         if self.copy_paste is not None:
             paste_idx = random.randint(0, self.__len__() - 1)
-            paste_img_data = self.load_example(paste_idx)
+            paste_img_data = self.load_example(paste_idx, pasteImg = True)
             for k in list(paste_img_data.keys()):
                 paste_img_data['paste_' + k] = paste_img_data[k]
                 del paste_img_data[k]
 
+
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots(1, 2, figsize=(16,5))
+            image = paste_img_data['paste_image']
+            mask = paste_img_data['paste_masks']
+            bbox = paste_img_data['paste_bboxes']
+
+            ax[0].imshow(image)
+            ax[1].imshow(mask[0])
+            ax[1].scatter([bbox[0][0],bbox[0][0],bbox[0][0]+bbox[0][2],bbox[0][0]+bbox[0][2]],[bbox[0][1],bbox[0][1]+bbox[0][3],bbox[0][1],bbox[0][1]+bbox[0][3]])
+            plt.show()
+
+            fig, ax = plt.subplots(1, 2, figsize=(16, 5))
+            image = img_data['image']
+            mask = img_data['masks']
+            bbox = img_data['bboxes']
+
+            ax[0].imshow(image)
+            ax[1].imshow(mask[0])
+            ax[1].scatter([bbox[0][0],bbox[0][0],bbox[0][0]+bbox[0][2],bbox[0][0]+bbox[0][2]],[bbox[0][1],bbox[0][1]+bbox[0][3],bbox[0][1],bbox[0][1]+bbox[0][3]])
+            plt.title("Before copy paste")
+            plt.show()
+
             img_data = self.copy_paste(**img_data, **paste_img_data)
+
+            fig, ax = plt.subplots(1, 2, figsize=(16, 5))
+            image = img_data['image']
+            mask = img_data['masks']
+            bbox = img_data['bboxes']
+
+            ax[0].imshow(image)
+            ax[1].imshow(mask[0])
+            ax[1].scatter([bbox[0][0],bbox[0][0],bbox[0][0]+bbox[0][2],bbox[0][0]+bbox[0][2]],[bbox[0][1],bbox[0][1]+bbox[0][3],bbox[0][1],bbox[0][1]+bbox[0][3]])
+            plt.title("After copy paste")
+            plt.show()
+
             img_data = self.post_transforms(**img_data)
             img_data['index'] = idx # ADDED
             img_data['paste_index'] = paste_idx

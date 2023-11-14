@@ -19,10 +19,10 @@ transform = A.Compose([
 print(os.getcwd())
 
 data = CocoDetectionCP(
-    '../../data/coco_minitrain_25k/images/train2017',
-    '../../data/coco_minitrain_25k/annotations/instances_minitrain2017.json',
+    '../../data/coco_minitrain_25k/images_pruned/train2017',
+    '../../data/coco_minitrain_25k/annotations/instances_train2017_pruned.json',
     transform
-)
+)       # root, annFile, pasteRoot, pasteAnnFile, transforms
 
 f, ax = plt.subplots(1, 2, figsize=(16, 16))
 
@@ -45,3 +45,10 @@ if len(bboxes) > 0:
     display_instances(image, boxes, show_masks, box_classes, class_names, show_bbox=True, ax=ax[1])
 else:
     display_instances(image, empty, empty, empty, empty, show_mask=False, show_bbox=False, ax=ax[1])
+
+f, ax = plt.subplots(1, 3, figsize=(16, 16))
+
+ax[0].imshow(img_data['paste_image'])
+ax[1].imshow(img_data['image'])
+ax[2].imshow(img_data['before_image'])
+plt.show()
