@@ -21,7 +21,7 @@ def get_prompts():
 
 def generate_images(pipe, prompt, debug, save_root, promp_idx):
     num_inference_steps = 1 if debug else 50
-    num_images_per_prompt = 1 if debug else 64
+    num_images_per_prompt = 1 if debug else 32
     images = pipe(prompt, num_inference_steps=num_inference_steps,
                   num_images_per_prompt=num_images_per_prompt).images
     for i, image in enumerate(images):
