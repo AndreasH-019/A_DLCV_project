@@ -44,7 +44,7 @@ if __name__ == "__main__":
     args = parserargs()
     dtype = torch.float32 if args.debug else torch.float16
     num_imgs_to_generate = 1 if args.debug else 200
-    num_inference_steps = 1 if args.debug else 50
+    num_inference_steps = 1 if args.debug else 100
     num_images_per_prompt = 1 if args.debug else 8
     pipe = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", torch_dtype=dtype,
                                                    requires_safety_checker=False, safety_checker=None)
