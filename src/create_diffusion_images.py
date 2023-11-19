@@ -16,8 +16,7 @@ def get_prompts():
     #            "photo realistic giraffe on white background running",
     #            "photo realistic giraffe on white background sleeping",
     #            "cartoon giraffe on white background"]
-    prompts = ["realistic giraffe on white background",
-               "realistic giraffe on white background entire body"]
+    prompts = ["giraffe on white background"]
     return prompts
 
 
