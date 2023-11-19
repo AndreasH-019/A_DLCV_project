@@ -13,9 +13,9 @@ def parserargs():
 def get_prompts():
     prompts = ["photo realistic giraffe on white background",
                "photo realistic giraffe on white background looking to the side",
-               "cartoon giraffe on white background",
-               "cartoon giraffe on white background looking to the side",
-               "freaky-looking giraffe on white background"]
+               "photo realistic giraffe on white background running",
+               "photo realistic giraffe on white background sleeping",
+               "cartoon giraffe on white background"]
     return prompts
 
 
