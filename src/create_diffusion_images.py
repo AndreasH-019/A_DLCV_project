@@ -11,11 +11,13 @@ def parserargs():
     return args
 
 def get_prompts():
-    prompts = ["photo realistic giraffe on white background",
-               "photo realistic giraffe on white background looking to the side",
-               "photo realistic giraffe on white background running",
-               "photo realistic giraffe on white background sleeping",
-               "cartoon giraffe on white background"]
+    # prompts = ["photo realistic giraffe on white background",
+    #            "photo realistic giraffe on white background looking to the side",
+    #            "photo realistic giraffe on white background running",
+    #            "photo realistic giraffe on white background sleeping",
+    #            "cartoon giraffe on white background"]
+    prompts = ["realistic giraffe on white background",
+               "realistic giraffe on white background entire body"]
     return prompts
 
 
