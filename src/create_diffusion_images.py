@@ -65,6 +65,7 @@ if __name__ == "__main__":
         prompt_idx += 1
         i += 1
         num_generated_imgs += num_images_per_prompt
+    zip_images(save_root)
     # for prompt_idx, prompt in enumerate(prompts):
     #     generate_images(pipe, prompt, args.debug, save_root, prompt_idx)
     # zip_images(save_root)
