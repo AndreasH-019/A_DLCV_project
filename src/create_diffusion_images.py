@@ -12,7 +12,8 @@ def parserargs():
 
 def get_prompts(class_):
     prompts = [f"{class_} on white background",
-               f"full body {class_} on white background"]
+               f"full body {class_} on white background",
+               f"{class_} from side on white background"]
     return prompts
 
 def get_class_save_roots(classes):
