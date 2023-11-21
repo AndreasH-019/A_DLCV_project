@@ -5,6 +5,8 @@ from copy_paste import copy_paste_class
 import pickle
 import numpy as np
 import torch
+import albumentations as A
+from copy_paste import CopyPaste
 
 min_keypoints_per_image = 10
 
@@ -59,8 +61,8 @@ class CocoDetectionCP(CocoDetection):
         if pasteImg == True:
 
             # load random image from folder
-            pasteRoot = '../../data/coco_minitrain_25k/images_pruned/giraffes_elephants/'
-            pasteAnnotRoot = '../../data/coco_minitrain_25k/annotations'
+            pasteRoot = '../data/coco_minitrain_25k/images_pruned/giraffes_elephants/'
+            pasteAnnotRoot = '../data/coco_minitrain_25k/annotations'
 
             chosen_class = np.random.choice(['elephant', 'elephant'])
             if chosen_class == 'elephant':
@@ -139,3 +141,16 @@ class CopyPasteTrain(CocoDetectionCP):
         target['masks'] = torch.stack(target['masks'])
 
         return image, target
+
+def get_paste_transform(task):
+    if task == 'train':
+        transform = A.Compose([
+            A.RandomScale(scale_limit=(-0.9, 1), p=1),  # LargeScaleJitter from scale of 0.1 to 2
+            A.PadIfNeeded(256, 256, border_mode=0),  # pads with image in the center, not the top left like the paper
+            A.RandomCrop(256, 256),
+            CopyPaste(blend=True, sigma=1, pct_objects_paste=0.8, p=1.)  # pct_objects_paste is a guess
+        ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
+        )
+    elif task in ['val', 'test']:
+        transform = A.Compose([], bbox_params=A.BboxParams(format="coco", min_visibility=0.05))
+    return transform

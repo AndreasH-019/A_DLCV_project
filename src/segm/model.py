@@ -5,6 +5,9 @@ from coco_dataset import CocoDataset, custom_collate_fn, plot_segmentation, get_
 import random
 from torch.utils.data.dataloader import DataLoader
 import torchmetrics
+import sys
+sys.path.append("copy-paste")
+from coco_paste_dataset import CopyPasteTrain, get_paste_transform
 
 class LitMaskRCNN(L.LightningModule):
     def __init__(self):
@@ -69,10 +72,16 @@ class LitMaskRCNN(L.LightningModule):
         # plot_segmentation(images[0], outputs[0]['masks'], outputs[0]['scores'])
 
     def get_dataset(self, task):
-        image_transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        dataset = CocoDataset(root=f"../../data/coco_minitrain_25k/images_pruned/{task}2017",
-                              annFile=f"../../data/coco_minitrain_25k/annotations/instances_{task}2017_pruned.json",
-                              transform=image_transform)
+        # image_transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+        # dataset = CocoDataset(root=f"../../data/coco_minitrain_25k/images_pruned/{task}2017",
+        #                       annFile=f"../../data/coco_minitrain_25k/annotations/instances_{task}2017_pruned.json",
+        #                       transform=image_transform)
+        transform = get_paste_transform(task)
+        dataset = CopyPasteTrain(
+            f'../data/coco_minitrain_25k/images_pruned/{task}2017',
+            f'../data/coco_minitrain_25k/annotations/instances_{task}2017_pruned.json',
+            transform
+        )
         return dataset
 
     def get_dataloader(self, task):

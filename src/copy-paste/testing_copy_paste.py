@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from copy_paste import CopyPaste
-from coco import CocoDetectionCP, CopyPasteTrain
+from coco_paste_dataset import CocoDetectionCP, CopyPasteTrain
 from visualize import display_instances
 import albumentations as A
 import random
