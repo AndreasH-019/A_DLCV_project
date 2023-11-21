@@ -59,22 +59,24 @@ def custom_collate_fn(batch):
         targets.append(target)
     return imgs, targets
 
-def plot_segmentation(image, segmentations, scores=None):
+def plot_segmentation(image, segmentations, labels, scores=None):
+    plot_img = get_segmentation_image(image, segmentations, labels, scores)
+    plt.imshow(F.to_pil_image(plot_img))
+    plt.show()
+
+def get_segmentation_image(image, segmentations, labels, scores):
     if scores != None:
         keep = scores > 0.7
         segmentations = segmentations[keep]
     segmentations = segmentations.to(torch.bool)
     image = (image / image.max() * 255).to(torch.uint8)
 
-    # Generer 200 forskellige farver
-    colors = torch.randint(0, 256, size=(200, 3), dtype=torch.uint8)
+    colors = 22*['black'] + ['blue'] + ['black']*2 + ['red']
+    color_map = [colors[label] for label in labels]
 
     plot_img = torchvision.utils.draw_segmentation_masks(image, segmentations, alpha=0.5,
-                                                         colors=colors.tolist())
-
-    plt.imshow(F.to_pil_image(plot_img))
-    plt.show()
-
+                                                         colors=color_map)
+    return plot_img
 
 if __name__ == "__main__":
     image_transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])

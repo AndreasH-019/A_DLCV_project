@@ -1,7 +1,7 @@
 import lightning as L
 import torch
 import torchvision
-from coco_dataset import CocoDataset, custom_collate_fn, plot_segmentation
+from coco_dataset import CocoDataset, custom_collate_fn, plot_segmentation, get_segmentation_image
 import random
 from torch.utils.data.dataloader import DataLoader
 import torchmetrics
@@ -28,10 +28,27 @@ class LitMaskRCNN(L.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        self.log_metric(batch)
+        images, targets = batch
+        outputs = self.maskRCNN(images)
+        for output in outputs:
+            output["masks"] = output["masks"] > 0.5
+            output["masks"] = output["masks"].squeeze(1)
+        metric_dict = self.meanAveragePrecision(outputs, targets)
+        self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
 
     def test_step(self, batch, batch_idx):
-        self.log_metric(batch)
+        images, targets = batch
+        outputs = self.maskRCNN(images)
+        for output in outputs:
+            output["masks"] = output["masks"] > 0.5
+            output["masks"] = output["masks"].squeeze(1)
+        metric_dict = self.meanAveragePrecision(outputs, targets)
+        self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
+        if self.should_log_image(batch_idx):
+            plot_img = get_segmentation_image(images[0], outputs[0]['masks'], outputs[0]['labels'],
+                                              outputs[0]['scores'])
+            self.logger.experiment.add_image(f'segm_image_{batch_idx}', plot_img, 0)
+
     def train_dataloader(self):
         return self.get_dataloader('train')
 
@@ -62,7 +79,7 @@ class LitMaskRCNN(L.LightningModule):
         dataset = self.get_dataset(task)
         shuffle_options = {'train': True, 'val': False, 'test': False}
         if self.debug:
-            dataset.ids = random.sample(dataset.ids, 1)
+            dataset.ids = random.sample(dataset.ids, 5)
             dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
@@ -73,6 +90,14 @@ class LitMaskRCNN(L.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=1e-5)
         return optimizer
+
+    def should_log_image(self, batch_idx):
+        if self.debug and (batch_idx % 1 == 0):
+            return True
+        if (not self.debug) and (batch_idx % 10 == 0):
+            return True
+        return False
+
 
 def get_model():
     pl_model = LitMaskRCNN()
