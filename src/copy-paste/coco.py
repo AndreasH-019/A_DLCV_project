@@ -2,6 +2,9 @@ import os
 import cv2
 from torchvision.datasets import CocoDetection
 from copy_paste import copy_paste_class
+import pickle
+import numpy as np
+import torch
 
 min_keypoints_per_image = 10
 
@@ -56,27 +59,30 @@ class CocoDetectionCP(CocoDetection):
         if pasteImg == True:
 
             # load random image from folder
-            path = "000000000753.jpg"
+            pasteRoot = '../../data/coco_minitrain_25k/images_pruned/giraffes_elephants/'
+            pasteAnnotRoot = '../../data/coco_minitrain_25k/annotations'
 
-            pasteRoot = '../../data/coco_minitrain_25k/images_pruned/images_diffusion'
-            pasteMaskPath = '../../data/coco_minitrain_25k/annotations/masks'
-            image = cv2.imread(os.path.join(pasteRoot, path))
+            chosen_class = np.random.choice(['elephant', 'elephant'])
+            if chosen_class == 'elephant':
+                with open(pasteAnnotRoot+"/elephant_annotations.pickle", 'rb') as handle:
+                    annot_dict = pickle.load(handle)
+                    path = np.random.choice(list(annot_dict.keys()))
+            else:
+                with open(pasteAnnotRoot+"/giraffe_annotations.pickle", 'rb') as handle:
+                    annot_dict = pickle.load(handle)
+                    path = np.random.choice(list(annot_dict.keys()))
+
+            image = cv2.imread(os.path.join(pasteRoot+chosen_class, path))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             # load mask which corresponds to image
-            mask = cv2.imread(os.path.join(pasteMaskPath, path))[:,:,0]
-            mask = (mask>200).astype('uint8')
-            mask = [mask]
+            mask = [annot_dict[path]['mask'], annot_dict[path]['mask']]
+
+            # mask.append()
+            bbox = annot_dict[path]['bbox']
 
             # load bbox which corresponds to image
-            bbox = [[87.73, 174.02, 274.7, 352.36, 25, 0]]
-
-            # import matplotlib.pyplot as plt
-            # fig, ax = plt.subplots(1, 2, figsize=(16,5))
-            # ax[0].imshow(image)
-            # ax[1].imshow(mask[0])
-            # ax[1].scatter([bbox[0][0],bbox[0][0],bbox[0][0]+bbox[0][2],bbox[0][0]+bbox[0][2]],[bbox[0][1],bbox[0][1]+bbox[0][3],bbox[0][1],bbox[0][1]+bbox[0][3]])
-            # plt.show()
+            bbox = [[bbox[0], bbox[1], bbox[2], bbox[3], bbox[4], 0],[bbox[0], bbox[1], bbox[2], bbox[3], bbox[4], 1]]
 
             #pack outputs into a dict
             output = {
@@ -113,3 +119,23 @@ class CocoDetectionCP(CocoDetection):
             }
         
         return self.transforms(**output)
+
+class CopyPasteTrain(CocoDetectionCP):
+    def __getitem__(self, item):
+        img_data = super().__getitem__(item)
+
+        image = (torch.tensor(img_data['image'])/255).permute(2,0,1)
+        target = {}
+
+        target['boxes'], target['labels'], target['masks'] = [], [], []
+
+        for box in img_data['bboxes']:
+            target['boxes'].append(torch.tensor([box[0],box[1],box[0]+box[2],box[1]+box[3]]))
+            target['labels'].append(torch.tensor(box[4]))
+            target['masks'].append(torch.tensor(img_data['masks'][box[-1]]).to(torch.bool))
+
+        target['boxes'] = torch.stack(target['boxes']).to(torch.float32)
+        target['labels'] = torch.stack(target['labels'])
+        target['masks'] = torch.stack(target['masks'])
+
+        return image, target

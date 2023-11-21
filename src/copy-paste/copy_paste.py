@@ -5,6 +5,7 @@ import numpy as np
 import albumentations as A
 from copy import deepcopy
 from skimage.filters import gaussian
+import torch
 
 def image_copy_paste(img, paste_img, alpha, blend=True, sigma=1):
     if alpha is not None:
@@ -306,41 +307,7 @@ def copy_paste_class(dataset_class):
                 paste_img_data['paste_' + k] = paste_img_data[k]
                 del paste_img_data[k]
 
-
-            import matplotlib.pyplot as plt
-            fig, ax = plt.subplots(1, 2, figsize=(16,5))
-            image = paste_img_data['paste_image']
-            mask = paste_img_data['paste_masks']
-            bbox = paste_img_data['paste_bboxes']
-
-            ax[0].imshow(image)
-            ax[1].imshow(mask[0])
-            ax[1].scatter([bbox[0][0],bbox[0][0],bbox[0][0]+bbox[0][2],bbox[0][0]+bbox[0][2]],[bbox[0][1],bbox[0][1]+bbox[0][3],bbox[0][1],bbox[0][1]+bbox[0][3]])
-            plt.show()
-
-            fig, ax = plt.subplots(1, 2, figsize=(16, 5))
-            image = img_data['image']
-            mask = img_data['masks']
-            bbox = img_data['bboxes']
-
-            ax[0].imshow(image)
-            ax[1].imshow(mask[0])
-            ax[1].scatter([bbox[0][0],bbox[0][0],bbox[0][0]+bbox[0][2],bbox[0][0]+bbox[0][2]],[bbox[0][1],bbox[0][1]+bbox[0][3],bbox[0][1],bbox[0][1]+bbox[0][3]])
-            plt.title("Before copy paste")
-            plt.show()
-
             img_data = self.copy_paste(**img_data, **paste_img_data)
-
-            fig, ax = plt.subplots(1, 2, figsize=(16, 5))
-            image = img_data['image']
-            mask = img_data['masks']
-            bbox = img_data['bboxes']
-
-            ax[0].imshow(image)
-            ax[1].imshow(mask[0])
-            ax[1].scatter([bbox[0][0],bbox[0][0],bbox[0][0]+bbox[0][2],bbox[0][0]+bbox[0][2]],[bbox[0][1],bbox[0][1]+bbox[0][3],bbox[0][1],bbox[0][1]+bbox[0][3]])
-            plt.title("After copy paste")
-            plt.show()
 
             img_data = self.post_transforms(**img_data)
             img_data['index'] = idx # ADDED
