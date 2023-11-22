@@ -1,12 +1,12 @@
 import os
 import cv2
 from torchvision.datasets import CocoDetection
-from copy_paste import copy_paste_class
 import pickle
 import numpy as np
 import torch
 import albumentations as A
 from copy_paste import CopyPaste
+import random
 
 min_keypoints_per_image = 10
 
@@ -34,7 +34,6 @@ def has_valid_annotation(anno):
 
     return False
 
-@copy_paste_class
 class CocoDetectionCP(CocoDetection):
     def __init__(
         self,
@@ -56,25 +55,26 @@ class CocoDetectionCP(CocoDetection):
 
         self.ids = ids
 
+        self.gen_classes = ['elephant', 'giraffe']
+        self.pasteRoot = '../data/coco_minitrain_25k/images_pruned/giraffes_elephants'
+        self.pasteAnnotRoot = '../data/coco_minitrain_25k/annotations'
+        self.init_gen_annot_dicts()
+        self._split_transforms()
+
+    def init_gen_annot_dicts(self):
+        self.gen_annot_dicts = {}
+        for gen_class in self.gen_classes:
+            with open(os.path.join(self.pasteAnnotRoot, f"{gen_class}_annotations.pickle"), 'rb') as handle:
+                self.gen_annot_dicts[gen_class] = pickle.load(handle)
+
     def load_example(self, index, pasteImg = False):
         # if we want to paste from diffusion model
         if pasteImg == True:
+            chosen_class = np.random.choice(self.gen_classes)
+            annot_dict = self.gen_annot_dicts[chosen_class]
+            path = np.random.choice(list(annot_dict.keys()))
 
-            # load random image from folder
-            pasteRoot = '../data/coco_minitrain_25k/images_pruned/giraffes_elephants/'
-            pasteAnnotRoot = '../data/coco_minitrain_25k/annotations'
-
-            chosen_class = np.random.choice(['elephant', 'elephant'])
-            if chosen_class == 'elephant':
-                with open(pasteAnnotRoot+"/elephant_annotations.pickle", 'rb') as handle:
-                    annot_dict = pickle.load(handle)
-                    path = np.random.choice(list(annot_dict.keys()))
-            else:
-                with open(pasteAnnotRoot+"/giraffe_annotations.pickle", 'rb') as handle:
-                    annot_dict = pickle.load(handle)
-                    path = np.random.choice(list(annot_dict.keys()))
-
-            image = cv2.imread(os.path.join(pasteRoot+chosen_class, path))
+            image = cv2.imread(os.path.join(self.pasteRoot, chosen_class, path))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             # load mask which corresponds to image
@@ -121,6 +121,68 @@ class CocoDetectionCP(CocoDetection):
             }
         
         return self.transforms(**output)
+
+    def _split_transforms(self):
+        split_index = None
+        for ix, tf in enumerate(list(self.transforms.transforms)):
+            if tf.get_class_fullname() == 'copypaste.CopyPaste':
+                split_index = ix
+
+        if split_index is not None:
+            tfs = list(self.transforms.transforms)
+            pre_copy = tfs[:split_index]
+            copy_paste = tfs[split_index]
+            post_copy = tfs[split_index+1:]
+
+            #replicate the other augmentation parameters
+            bbox_params = None
+            keypoint_params = None
+            paste_additional_targets = {}
+            if 'bboxes' in self.transforms.processors:
+                bbox_params = self.transforms.processors['bboxes'].params
+                paste_additional_targets['paste_bboxes'] = 'bboxes'
+                if self.transforms.processors['bboxes'].params.label_fields:
+                    msg = "Copy-paste does not support bbox label_fields! "
+                    msg += "Expected bbox format is (a, b, c, d, label_field)"
+                    raise Exception(msg)
+            if 'keypoints' in self.transforms.processors:
+                keypoint_params = self.transforms.processors['keypoints'].params
+                paste_additional_targets['paste_keypoints'] = 'keypoints'
+                if keypoint_params.label_fields:
+                    raise Exception('Copy-paste does not support keypoint label fields!')
+
+            if self.transforms.additional_targets:
+                raise Exception('Copy-paste does not support additional_targets!')
+
+            #recreate transforms
+            self.transforms = A.Compose(pre_copy, bbox_params, keypoint_params, additional_targets=None)
+            self.post_transforms = A.Compose(post_copy, bbox_params, keypoint_params, additional_targets=None)
+            self.copy_paste = A.Compose(
+                [copy_paste], bbox_params, keypoint_params, additional_targets=paste_additional_targets
+            )
+        else:
+            self.copy_paste = None
+            self.post_transforms = None
+
+    def __getitem__(self, idx):
+        img_data = self.load_example(idx)
+        before_img = img_data['image']
+        if self.copy_paste is not None:
+            paste_idx = random.randint(0, self.__len__() - 1)
+            paste_img_data = self.load_example(paste_idx, pasteImg = True)
+            for k in list(paste_img_data.keys()):
+                paste_img_data['paste_' + k] = paste_img_data[k]
+                del paste_img_data[k]
+
+            img_data = self.copy_paste(**img_data, **paste_img_data)
+
+            img_data = self.post_transforms(**img_data)
+            img_data['index'] = idx # ADDED
+            img_data['paste_index'] = paste_idx
+            img_data['paste_image'] = paste_img_data['paste_image']
+            img_data['before_image'] = before_img
+
+        return img_data
 
 class CopyPasteTrain(CocoDetectionCP):
     def __getitem__(self, item):
