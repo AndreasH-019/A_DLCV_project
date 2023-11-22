@@ -125,21 +125,17 @@ class CocoDetectionCP(CocoDetection):
 class CopyPasteTrain(CocoDetectionCP):
     def __getitem__(self, item):
         img_data = super().__getitem__(item)
-
         image = (torch.tensor(img_data['image'])/255).permute(2,0,1)
         target = {}
+        n = len(img_data['bboxes'])
+        target['boxes'] = torch.zeros(size=(n, 4), dtype=torch.float32)
+        target['labels'] = torch.zeros(size=(n,), dtype=torch.int64)
+        target['masks'] = torch.zeros(size=(n, image.shape[1], image.shape[2]), dtype=torch.bool)
 
-        target['boxes'], target['labels'], target['masks'] = [], [], []
-
-        for box in img_data['bboxes']:
-            target['boxes'].append(torch.tensor([box[0],box[1],box[0]+box[2],box[1]+box[3]]))
-            target['labels'].append(torch.tensor(box[4]))
-            target['masks'].append(torch.tensor(img_data['masks'][box[-1]]).to(torch.bool))
-
-        target['boxes'] = torch.stack(target['boxes']).to(torch.float32)
-        target['labels'] = torch.stack(target['labels'])
-        target['masks'] = torch.stack(target['masks'])
-
+        for i, box in enumerate(img_data['bboxes']):
+            target['boxes'][i] = torch.tensor([box[0], box[1], box[0]+box[2], box[1]+box[3]]).to(torch.float32)
+            target['labels'][i] = torch.tensor(box[4])
+            target['masks'][i] = torch.tensor(img_data['masks'][box[-1]]).to(torch.bool)
         return image, target
 
 def get_paste_transform(task):

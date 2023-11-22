@@ -4,3 +4,5 @@ torchvision
 matplotlib
 torchmetrics[detection]
 lightning[extra]
+opencv-python
+albumentations
