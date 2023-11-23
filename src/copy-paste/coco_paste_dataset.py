@@ -5,7 +5,6 @@ import pickle
 import numpy as np
 import torch
 import albumentations as A
-from copy_paste import CopyPaste
 import random
 
 min_keypoints_per_image = 10
@@ -39,11 +38,13 @@ class CocoDetectionCP(CocoDetection):
         self,
         root,
         annFile,
-        transforms
+        transforms,
+        paste_transforms,
     ):
         super(CocoDetectionCP, self).__init__(
             root, annFile, None, None, transforms
         )
+        self.paste_transforms = paste_transforms
 
         # filter images without detection annotations
         ids = []
@@ -119,8 +120,9 @@ class CocoDetectionCP(CocoDetection):
                 'masks': masks,
                 'bboxes': bboxes
             }
-        
-        return self.transforms(**output)
+
+        return output
+        # return self.transforms(**output)
 
     def _split_transforms(self):
         split_index = None
@@ -157,24 +159,24 @@ class CocoDetectionCP(CocoDetection):
             #recreate transforms
             self.transforms = A.Compose(pre_copy, bbox_params, keypoint_params, additional_targets=None)
             self.post_transforms = A.Compose(post_copy, bbox_params, keypoint_params, additional_targets=None)
-            self.copy_paste = A.Compose(
+            self.copy_paste_transform = A.Compose(
                 [copy_paste], bbox_params, keypoint_params, additional_targets=paste_additional_targets
             )
         else:
-            self.copy_paste = None
+            self.copy_paste_transform = None
             self.post_transforms = None
 
     def __getitem__(self, idx):
         img_data = self.load_example(idx)
+        img_data = self.transforms(**img_data)
         before_img = img_data['image']
-        if self.copy_paste is not None:
+        if self.copy_paste_transform is not None:
             paste_idx = random.randint(0, self.__len__() - 1)
             paste_img_data = self.load_example(paste_idx, pasteImg = True)
-            for k in list(paste_img_data.keys()):
-                paste_img_data['paste_' + k] = paste_img_data[k]
-                del paste_img_data[k]
+            paste_img_data = self.paste_transforms(**paste_img_data)
+            paste_img_data = {f'paste_{key}': value for key, value in paste_img_data.items()}
 
-            img_data = self.copy_paste(**img_data, **paste_img_data)
+            img_data = self.copy_paste_transform(**img_data, **paste_img_data)
 
             img_data = self.post_transforms(**img_data)
             img_data['index'] = idx # ADDED
@@ -187,7 +189,7 @@ class CocoDetectionCP(CocoDetection):
 class CopyPasteTrain(CocoDetectionCP):
     def __getitem__(self, item):
         img_data = super().__getitem__(item)
-        image = (torch.tensor(img_data['image'])/255).permute(2,0,1)
+        image = (torch.tensor(img_data['image'])/255).permute(2, 0, 1)
         target = {}
         n = len(img_data['bboxes'])
         target['boxes'] = torch.zeros(size=(n, 4), dtype=torch.float32)
@@ -199,16 +201,3 @@ class CopyPasteTrain(CocoDetectionCP):
             target['labels'][i] = torch.tensor(box[4])
             target['masks'][i] = torch.tensor(img_data['masks'][box[-1]]).to(torch.bool)
         return image, target
-
-def get_paste_transform(task):
-    if task == 'train':
-        transform = A.Compose([
-            A.RandomScale(scale_limit=(-0.9, 1), p=1),  # LargeScaleJitter from scale of 0.1 to 2
-            A.PadIfNeeded(256, 256, border_mode=0),  # pads with image in the center, not the top left like the paper
-            A.RandomCrop(256, 256),
-            CopyPaste(blend=True, sigma=1, pct_objects_paste=0.8, p=1.)  # pct_objects_paste is a guess
-        ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
-        )
-    elif task in ['val', 'test']:
-        transform = A.Compose([], bbox_params=A.BboxParams(format="coco", min_visibility=0.05))
-    return transform

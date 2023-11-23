@@ -1,11 +1,6 @@
-import os
-import cv2
-import random
 import numpy as np
 import albumentations as A
-from copy import deepcopy
 from skimage.filters import gaussian
-import torch
 
 def image_copy_paste(img, paste_img, alpha, blend=True, sigma=1):
     if alpha is not None:
