@@ -20,7 +20,7 @@ class LitMaskRCNN(L.LightningModule):
         assert paste_mode in ['none', 'gen', 'real']
         self.paste_mode = paste_mode
         self.debug = debug
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters()
         self.meanAveragePrecision = torchmetrics.detection.mean_ap.MeanAveragePrecision(iou_type='segm')
 
     def set_debug(self, new_debug):
