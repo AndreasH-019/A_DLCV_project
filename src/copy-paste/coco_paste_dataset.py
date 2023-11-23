@@ -40,11 +40,13 @@ class CocoDetectionCP(CocoDetection):
         annFile,
         transforms,
         paste_transforms,
+        load_from_generated,
     ):
         super(CocoDetectionCP, self).__init__(
             root, annFile, None, None, transforms
         )
         self.paste_transforms = paste_transforms
+        self.load_from_generated = load_from_generated
 
         # filter images without detection annotations
         ids = []
@@ -172,12 +174,10 @@ class CocoDetectionCP(CocoDetection):
         before_img = img_data['image']
         if self.copy_paste_transform is not None:
             paste_idx = random.randint(0, self.__len__() - 1)
-            paste_img_data = self.load_example(paste_idx, pasteImg = True)
+            paste_img_data = self.load_example(paste_idx, pasteImg = self.load_from_generated)
             paste_img_data = self.paste_transforms(**paste_img_data)
             paste_img_data = {f'paste_{key}': value for key, value in paste_img_data.items()}
-
             img_data = self.copy_paste_transform(**img_data, **paste_img_data)
-
             img_data = self.post_transforms(**img_data)
             img_data['index'] = idx # ADDED
             img_data['paste_index'] = paste_idx

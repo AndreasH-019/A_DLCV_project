@@ -12,24 +12,26 @@ from coco_paste_dataset import CopyPasteTrain
 from copy_paste import CopyPaste
 
 class LitMaskRCNN(L.LightningModule):
-    def __init__(self):
+    def __init__(self, paste_mode, debug):
         super().__init__()
         # weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_Weights.COCO_V1
         # self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(weights=weights)
         self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(weights=None)
+        assert paste_mode in ['none', 'gen', 'real']
+        self.paste_mode = paste_mode
+        self.debug = debug
         self.save_hyperparameters(logger=False)
         self.meanAveragePrecision = torchmetrics.detection.mean_ap.MeanAveragePrecision(iou_type='segm')
-        self.debug = False
 
     def set_debug(self, new_debug):
         self.debug = new_debug
-
     def training_step(self, batch, batch_idx):
         images, targets = batch
         loss_dict = self.maskRCNN(images, targets)
         loss = sum(loss for loss in loss_dict.values())
         self.log("loss", loss.item())
         self.log("loss_mask", loss_dict['loss_mask'].item())
+        # plot_segmentation(images[0], targets[0]['masks'], targets[0]['labels'])
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -64,12 +66,14 @@ class LitMaskRCNN(L.LightningModule):
         return self.get_dataloader('test')
 
     def get_dataset(self, task):
-        transform, paste_transform = get_paste_transform(task)
+        load_from_generated_options = {'none': True, 'gen': True, 'real': False}
+        transform, paste_transform = get_paste_transform(task, self.paste_mode)
         dataset = CopyPasteTrain(
             f'../data/coco_minitrain_25k/images_pruned/{task}2017',
             f'../data/coco_minitrain_25k/annotations/instances_{task}2017_pruned.json',
             transform,
-            paste_transform
+            paste_transform,
+            load_from_generated=load_from_generated_options[self.paste_mode]
         )
         return dataset
 
@@ -77,7 +81,7 @@ class LitMaskRCNN(L.LightningModule):
         dataset = self.get_dataset(task)
         shuffle_options = {'train': True, 'val': False, 'test': False}
         if self.debug:
-            dataset.ids = random.sample(dataset.ids, 2)
+            dataset.ids = random.sample(dataset.ids, 1)
             dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
@@ -101,22 +105,20 @@ def get_model():
     pl_model = LitMaskRCNN()
     return pl_model
 
-def get_paste_transform(task):
+def get_paste_transform(task, paste_mode):
+    copy_paste_p_options = {'none': 0.0, 'gen': 1.0, 'real': 1.0}
     paste_transforms = A.Compose([
-        A.RandomScale(scale_limit=(-0.9, -0.6), p=1),
-        A.PadIfNeeded(256, 256, border_mode=0),
-        A.RandomCrop(256, 256, p=0.5),
-        A.Affine(translate_px={'x': (-150, 150), 'y': (-150, 150)}, p=1.0, rotate=[-180, 180]),
+        A.ShiftScaleRotate(shift_limit=(-0.9, 0.9), rotate_limit=(-90, 90),
+                           scale_limit=(-0.9, 0.1), border_mode=0, p=0.8),
+
         A.Resize(256, 256)
     ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
     )
     if task == 'train':
         transform = A.Compose([
-            A.RandomScale(scale_limit=(-0.9, 1), p=1),  # LargeScaleJitter from scale of 0.1 to 2
-            A.PadIfNeeded(256, 256, border_mode=0),  # pads with image in the center, not the top left like the paper
-            A.RandomCrop(256, 256, p=0.5),
+            A.RandomScale(scale_limit=(-0.9, 1), p=1),
             A.Resize(256, 256),
-            CopyPaste(blend=True, sigma=1, pct_objects_paste=0.8, p=1.0),  # pct_objects_paste is a guess
+            CopyPaste(blend=True, sigma=0.5, pct_objects_paste=1.0, p=copy_paste_p_options[paste_mode]),
         ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
         )
     elif task in ['val', 'test']:
