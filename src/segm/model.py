@@ -100,15 +100,18 @@ class LitMaskRCNN(L.LightningModule):
             return True
         return False
 
+    def forward(self, *args, **kwargs):
+        return self.maskRCNN(*args, **kwargs)
+
 
 def get_model():
     pl_model = LitMaskRCNN()
     return pl_model
 
 def get_paste_transform(task, paste_mode):
-    copy_paste_p_options = {'none': 0.0, 'gen': 1.0, 'real': 1.0}
+    copy_paste_p_options = {'none': 0.0, 'gen': 0.5, 'real': 0.5}
     paste_transforms = A.Compose([
-        A.ShiftScaleRotate(shift_limit=(-0.9, 0.9), rotate_limit=(-90, 90),
+        A.ShiftScaleRotate(shift_limit=(-0.9, 0.9), rotate_limit=(-0, 0),
                            scale_limit=(-0.9, 0.1), border_mode=0, p=0.8),
 
         A.Resize(256, 256)
@@ -118,7 +121,7 @@ def get_paste_transform(task, paste_mode):
         transform = A.Compose([
             A.RandomScale(scale_limit=(-0.9, 1), p=1),
             A.Resize(256, 256),
-            CopyPaste(blend=True, sigma=0.5, pct_objects_paste=1.0, p=copy_paste_p_options[paste_mode]),
+            CopyPaste(blend=True, sigma=0.1, pct_objects_paste=1.0, p=copy_paste_p_options[paste_mode]),
         ], bbox_params=A.BboxParams(format="coco", min_visibility=0.05)
         )
     elif task in ['val', 'test']:

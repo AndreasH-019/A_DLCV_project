@@ -66,7 +66,7 @@ def plot_segmentation(image, segmentations, labels, scores=None):
 
 def get_segmentation_image(image, segmentations, labels, scores):
     if scores != None:
-        keep = scores > 0.7
+        keep = scores > 0.90
         segmentations = segmentations[keep]
     segmentations = segmentations.to(torch.bool)
     image = (image / image.max() * 255).to(torch.uint8)
