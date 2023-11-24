@@ -67,7 +67,7 @@ class CocoDetectionCP(CocoDetection):
     def init_gen_annot_dicts(self):
         self.gen_annot_dicts = {}
         for gen_class in self.gen_classes:
-            with open(os.path.join(self.pasteAnnotRoot, f"{gen_class}_annotations.pickle"), 'rb') as handle:
+            with open(os.path.join(self.pasteAnnotRoot, f"final_{gen_class}_annotations.pickle"), 'rb') as handle:
                 self.gen_annot_dicts[gen_class] = pickle.load(handle)
 
     def load_example(self, index, pasteImg = False):
