@@ -64,7 +64,7 @@ def plot_segmentation(image, segmentations, labels, scores=None):
     plt.imshow(F.to_pil_image(plot_img))
     plt.show()
 
-def get_segmentation_image(image, segmentations, labels, scores):
+def get_segmentation_image(image, segmentations, labels, scores=None):
     if scores != None:
         keep = scores > 0.90
         segmentations = segmentations[keep]

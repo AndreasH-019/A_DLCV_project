@@ -10,6 +10,7 @@ import sys
 sys.path.append("copy-paste")
 from coco_paste_dataset import CopyPasteTrain
 from copy_paste import CopyPaste
+from dice import dice
 
 class LitMaskRCNN(L.LightningModule):
     def __init__(self, paste_mode, debug):
@@ -50,7 +51,9 @@ class LitMaskRCNN(L.LightningModule):
             output["masks"] = output["masks"] > 0.5
             output["masks"] = output["masks"].squeeze(1)
         metric_dict = self.meanAveragePrecision(outputs, targets)
+        dice_score = dice(outputs, targets, threshold=0.9)
         self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
+        self.log("dice", dice_score, batch_size=len(images))
         if self.should_log_image(batch_idx):
             plot_img = get_segmentation_image(images[0], outputs[0]['masks'], outputs[0]['labels'],
                                               outputs[0]['scores'])
