@@ -1,7 +1,8 @@
 import lightning as L
 import torch
+import numpy as np
 import torchvision
-from coco_dataset import CocoDataset, custom_collate_fn, plot_segmentation, get_segmentation_image
+from coco_dataset import CocoDataset, custom_collate_fn, plot_segmentation, get_segmentation_image, COCO_CLASSES
 import random
 from torch.utils.data.dataloader import DataLoader
 import torchmetrics
@@ -51,9 +52,11 @@ class LitMaskRCNN(L.LightningModule):
             output["masks"] = output["masks"] > 0.5
             output["masks"] = output["masks"].squeeze(1)
         metric_dict = self.meanAveragePrecision(outputs, targets)
-        dice_score = dice(outputs, targets, threshold=0.9)
         self.log("mAP", metric_dict['map'].item(), batch_size=len(images))
-        self.log("dice", dice_score, batch_size=len(images))
+        dice_score = dice(outputs, targets, threshold=0.9)
+        for key, value in dice_score.items():
+            if not np.isnan(value):
+                self.log(f"{COCO_CLASSES[key]}_dice", value, batch_size=len(images))
         if self.should_log_image(batch_idx):
             plot_img = get_segmentation_image(images[0], outputs[0]['masks'], outputs[0]['labels'],
                                               outputs[0]['scores'])
@@ -84,7 +87,7 @@ class LitMaskRCNN(L.LightningModule):
         dataset = self.get_dataset(task)
         shuffle_options = {'train': True, 'val': False, 'test': False}
         if self.debug:
-            dataset.ids = random.sample(dataset.ids, 1)
+            dataset.ids = random.sample(dataset.ids, 15)
             dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
