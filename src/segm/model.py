@@ -96,7 +96,7 @@ class LitMaskRCNN(L.LightningModule):
     def should_log_image(self, batch_idx):
         if self.debug and (batch_idx % 1 == 0):
             return True
-        if (not self.debug) and (batch_idx % 10 == 0):
+        if (not self.debug) and (batch_idx % 3 == 0):
             return True
         return False
 
