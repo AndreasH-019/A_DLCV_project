@@ -91,7 +91,7 @@ class LitMaskRCNN(L.LightningModule):
             dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
-            dataloader = DataLoader(dataset=dataset, batch_size=8,
+            dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=4, collate_fn=custom_collate_fn)
         return dataloader
 
@@ -102,7 +102,7 @@ class LitMaskRCNN(L.LightningModule):
     def should_log_image(self, batch_idx):
         if self.debug and (batch_idx % 1 == 0):
             return True
-        if (not self.debug) and (batch_idx % 1 == 0):
+        if (not self.debug) and (batch_idx % 20 == 0):
             return True
         return False
 
