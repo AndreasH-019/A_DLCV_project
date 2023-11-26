@@ -86,12 +86,13 @@ class LitMaskRCNN(L.LightningModule):
     def get_dataloader(self, task):
         dataset = self.get_dataset(task)
         shuffle_options = {'train': True, 'val': False, 'test': False}
+        batch_size_options = {'train': 8, 'val': 8, 'test': 1}
         if self.debug:
             dataset.ids = random.sample(dataset.ids, 3)
             dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
-            dataloader = DataLoader(dataset=dataset, batch_size=1,
+            dataloader = DataLoader(dataset=dataset, batch_size=batch_size_options[task],
                                     shuffle=shuffle_options[task], num_workers=4, collate_fn=custom_collate_fn)
         return dataloader
 
