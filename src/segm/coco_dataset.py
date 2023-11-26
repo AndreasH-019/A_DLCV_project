@@ -78,6 +78,27 @@ def get_segmentation_image(image, segmentations, labels, scores=None):
                                                          colors=color_map)
     return plot_img
 
+def get_bounding_box_image(image, boxes, labels, scores=None):
+    keep = torch.ones(size=(boxes.shape[0],), dtype=torch.bool)
+    if scores != None:
+        keep = scores > 0.90
+        # boxes = boxes[keep]
+    image = (image / image.max() * 255).to(torch.uint8)
+    # label_strs = [COCO_CLASSES[label] for label in labels[keep]]
+    label_strs = ['' for label in labels[keep]]
+    colors = 22 * ['black'] + ['blue'] + ['black'] * 2 + ['red']
+    color_map = [colors[label] for label in labels]
+    # color_map = 'black'
+    plot_img = torchvision.utils.draw_bounding_boxes(image, boxes[keep],
+                                                     label_strs, width=4,
+                                                     colors=color_map)
+    return plot_img
+
+def get_bounding_box_and_segmentation_image(image, boxes, segmentations, labels, scores=None):
+    plot_image = get_segmentation_image(image, segmentations, labels, scores)
+    plot_image = get_bounding_box_image(plot_image, boxes, labels, scores)
+    return plot_image
+
 if __name__ == "__main__":
     image_transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
     dataset_train = CocoDataset(
