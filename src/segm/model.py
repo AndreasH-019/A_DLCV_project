@@ -19,7 +19,7 @@ class LitMaskRCNN(L.LightningModule):
         # weights = torchvision.models.detection.MaskRCNN_ResNet50_FPN_Weights.COCO_V1
         # self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(weights=weights)
         self.maskRCNN = torchvision.models.detection.maskrcnn_resnet50_fpn(weights=None)
-        assert paste_mode in ['none', 'gen', 'real']
+        assert paste_mode in ['none', 'gen', 'real', 'genreal']
         self.paste_mode = paste_mode
         self.debug = debug
         self.save_hyperparameters()
@@ -33,8 +33,9 @@ class LitMaskRCNN(L.LightningModule):
         loss = sum(loss for loss in loss_dict.values())
         self.log("loss", loss.item())
         self.log("loss_mask", loss_dict['loss_mask'].item())
-        # plot_segmentation(images[0], targets[0]['masks'], targets[0]['labels'])
+        plot_segmentation(images[0], targets[0]['masks'], targets[0]['labels'])
         return loss
+
 
     def validation_step(self, batch, batch_idx):
         images, targets = batch
@@ -72,14 +73,14 @@ class LitMaskRCNN(L.LightningModule):
         return self.get_dataloader('test')
 
     def get_dataset(self, task):
-        load_from_generated_options = {'none': True, 'gen': True, 'real': False}
+        load_from_generated_options = {'none': 1.0, 'gen': 1.0, 'real': 0.0, 'genreal': 0.5}
         transform, paste_transform = get_paste_transform(task, self.paste_mode)
         dataset = CopyPasteTrain(
             f'../data/coco_minitrain_25k/images_pruned/{task}2017',
             f'../data/coco_minitrain_25k/annotations/instances_{task}2017_pruned.json',
             transform,
             paste_transform,
-            load_from_generated=load_from_generated_options[self.paste_mode]
+            load_from_generated_p=load_from_generated_options[self.paste_mode]
         )
         return dataset
 
@@ -88,7 +89,7 @@ class LitMaskRCNN(L.LightningModule):
         shuffle_options = {'train': True, 'val': False, 'test': False}
         batch_size_options = {'train': 8, 'val': 8, 'test': 1}
         if self.debug:
-            dataset.ids = random.sample(dataset.ids, 3)
+            dataset.ids = random.sample(dataset.ids, len(dataset.ids))
             dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
@@ -116,7 +117,7 @@ def get_model():
     return pl_model
 
 def get_paste_transform(task, paste_mode):
-    copy_paste_p_options = {'none': 0.0, 'gen': 0.5, 'real': 0.5}
+    copy_paste_p_options = {'none': 0.0, 'gen': 0.5, 'real': 0.5, 'genreal': 0.5}
     paste_transforms = A.Compose([
         A.ShiftScaleRotate(shift_limit=(-0.9, 0.9), rotate_limit=(-0, 0),
                            scale_limit=(-0.9, 0.1), border_mode=0, p=0.8),

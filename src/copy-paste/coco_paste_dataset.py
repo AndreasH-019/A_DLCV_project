@@ -40,13 +40,13 @@ class CocoDetectionCP(CocoDetection):
         annFile,
         transforms,
         paste_transforms,
-        load_from_generated,
+        load_from_generated_p,
     ):
         super(CocoDetectionCP, self).__init__(
             root, annFile, None, None, transforms
         )
         self.paste_transforms = paste_transforms
-        self.load_from_generated = load_from_generated
+        self.load_from_generated_p = load_from_generated_p
 
         # filter images without detection annotations
         ids = []
@@ -70,9 +70,9 @@ class CocoDetectionCP(CocoDetection):
             with open(os.path.join(self.pasteAnnotRoot, f"final_{gen_class}_annotations.pickle"), 'rb') as handle:
                 self.gen_annot_dicts[gen_class] = pickle.load(handle)
 
-    def load_example(self, index, pasteImg = False):
+    def load_example(self, index, paste_from_generated = False):
         # if we want to paste from diffusion model
-        if pasteImg == True:
+        if paste_from_generated == True:
             chosen_class = np.random.choice(self.gen_classes)
             annot_dict = self.gen_annot_dicts[chosen_class]
             path = np.random.choice(list(annot_dict.keys()))
@@ -174,7 +174,7 @@ class CocoDetectionCP(CocoDetection):
         before_img = img_data['image']
         if self.copy_paste_transform is not None:
             paste_idx = random.randint(0, self.__len__() - 1)
-            paste_img_data = self.load_example(paste_idx, pasteImg = self.load_from_generated)
+            paste_img_data = self.load_example(paste_idx, paste_from_generated=self.load_from_generated_p > random.random())
             paste_img_data = self.paste_transforms(**paste_img_data)
             paste_img_data = {f'paste_{key}': value for key, value in paste_img_data.items()}
             img_data = self.copy_paste_transform(**img_data, **paste_img_data)
