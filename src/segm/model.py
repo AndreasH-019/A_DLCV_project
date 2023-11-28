@@ -33,7 +33,7 @@ class LitMaskRCNN(L.LightningModule):
         loss = sum(loss for loss in loss_dict.values())
         self.log("loss", loss.item())
         self.log("loss_mask", loss_dict['loss_mask'].item())
-        plot_segmentation(images[0], targets[0]['masks'], targets[0]['labels'])
+        # plot_segmentation(images[0], targets[0]['masks'], targets[0]['labels'])
         return loss
 
 
@@ -89,7 +89,7 @@ class LitMaskRCNN(L.LightningModule):
         shuffle_options = {'train': True, 'val': False, 'test': False}
         batch_size_options = {'train': 8, 'val': 8, 'test': 1}
         if self.debug:
-            dataset.ids = random.sample(dataset.ids, len(dataset.ids))
+            dataset.ids = random.sample(dataset.ids, 1)
             dataloader = DataLoader(dataset=dataset, batch_size=1,
                                     shuffle=shuffle_options[task], num_workers=0, collate_fn=custom_collate_fn)
         else:
