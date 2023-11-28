@@ -71,7 +71,8 @@ def get_segmentation_image(image, segmentations, labels, scores=None):
     segmentations = segmentations.to(torch.bool)
     image = (image / image.max() * 255).to(torch.uint8)
 
-    colors = 22*['black'] + ['blue'] + ['black']*2 + ['red']
+    # colors = 22*['black'] + ['blue'] + ['black']*2 + ['red']
+    colors = 22 * ['black'] + ['#b3a369'] + ['black'] * 2 + ['#990000']
     color_map = [colors[label] for label in labels]
 
     plot_img = torchvision.utils.draw_segmentation_masks(image, segmentations, alpha=0.5,
@@ -86,7 +87,8 @@ def get_bounding_box_image(image, boxes, labels, scores=None):
     image = (image / image.max() * 255).to(torch.uint8)
     # label_strs = [COCO_CLASSES[label] for label in labels[keep]]
     label_strs = ['' for label in labels[keep]]
-    colors = 22 * ['black'] + ['blue'] + ['black'] * 2 + ['red']
+    # colors = 22 * ['black'] + ['blue'] + ['black'] * 2 + ['red']
+    colors = 22 * ['black'] + ['#b3a369'] + ['black'] * 2 + ['#990000']
     color_map = [colors[label] for label in labels]
     # color_map = 'black'
     plot_img = torchvision.utils.draw_bounding_boxes(image, boxes[keep],
