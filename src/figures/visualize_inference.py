@@ -14,8 +14,10 @@ import torchvision.transforms.functional as F
 
 checkpoint_paths = ["lightning_logs/no copy paste/checkpoints/best.ckpt",
                     "lightning_logs/real copy paste/checkpoints/best.ckpt",
-                    "lightning_logs/gen copy paste/checkpoints/best.ckpt"]
-titles = ["Ground truth", "No copy paste", "Paste from real", "Paste from generated"]
+                    "lightning_logs/gen copy paste/checkpoints/best.ckpt",
+                    "lightning_logs/genreal copy paste/checkpoints/best.ckpt"]
+titles = ["Ground truth", "No copy paste", "Paste from real", "Paste from generated", "Paste from both"]
+assert len(titles) == len(checkpoint_paths)+1
 models = [LitMaskRCNN.load_from_checkpoint(checkpoint_path=checkpoint_path).eval() for checkpoint_path in checkpoint_paths]
 dataloader = models[0].test_dataloader()
 dataset = dataloader.dataset
@@ -47,7 +49,7 @@ for i in tqdm(plot_idxs):
                                                                      outputs[0]['scores'])
         segmentation_images.append(segmentation_image)
 
-fig, ax = plt.subplots(3, 4, figsize=(11, 8))
+fig, ax = plt.subplots(3, 5, figsize=(11, 8))
 ax = ax.flatten()
 for i in range(len(ax)):
     F.to_pil_image(segmentation_images[i])

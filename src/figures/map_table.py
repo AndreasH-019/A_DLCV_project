@@ -4,7 +4,7 @@ from scipy import stats
 import os
 
 # Liste over dine CSV-filer
-root = "giraffe_dice"
+root = "mAP_test"
 csv_files = os.listdir(root)
 
 for file in csv_files:
